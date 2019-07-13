@@ -1,13 +1,15 @@
+import os.path
 from typing import Callable, List
 
 from rdkit import Chem
 from rdkit.DataStructs.cDataStructs import TanimotoSimilarity
 
-from guacamol.utils.descriptors import mol_weight, logP, num_H_donors, tpsa, num_atoms, AtomCounter
-from guacamol.utils.fingerprints import get_fingerprint
 from guacamol.score_modifier import ScoreModifier, MinGaussianModifier, MaxGaussianModifier, GaussianModifier
 from guacamol.scoring_function import ScoringFunctionBasedOnRdkitMol, MoleculewiseScoringFunction
+from guacamol.utils import smina
 from guacamol.utils.chemistry import smiles_to_rdkit_mol, parse_molecular_formula
+from guacamol.utils.descriptors import mol_weight, logP, num_H_donors, tpsa, num_atoms, AtomCounter
+from guacamol.utils.fingerprints import get_fingerprint
 from guacamol.utils.math import arithmetic_mean, geometric_mean
 
 
@@ -177,3 +179,18 @@ class SMARTSScoringFunction(ScoringFunctionBasedOnRdkitMol):
                 return 1.0
             else:
                 return 0.0
+
+
+class SminaDockerScoringFunction(MoleculewiseScoringFunction):
+
+    def __init__(self, protein: str, protein_dir: str, score_modifier: ScoreModifier = None):
+        super().__init__(score_modifier)
+        protein = protein.lower()
+        assert protein in smina.proteins
+
+        self._protein = smina.proteins[protein]
+        self._protein_dir = protein_dir
+
+    def raw_score(self, smiles: str) -> float:
+        protein_path = os.path.join(self._protein_dir, self._protein['filename'])
+        return smina.smina_dock_ligand(smiles, protein_path, self._protein['pocket_center'])

@@ -1,7 +1,7 @@
 from rdkit import Chem
 
 from guacamol.common_scoring_functions import TanimotoScoringFunction, RdkitScoringFunction, CNS_MPO_ScoringFunction, \
-    IsomerScoringFunction, SMARTSScoringFunction
+    IsomerScoringFunction, SMARTSScoringFunction, SminaDockerScoringFunction
 from guacamol.distribution_learning_benchmark import DistributionLearningBenchmark, NoveltyBenchmark, KLDivBenchmark
 from guacamol.frechet_benchmark import FrechetBenchmark
 from guacamol.goal_directed_benchmark import GoalDirectedBenchmark
@@ -467,3 +467,15 @@ def ranolazine_mpo() -> GoalDirectedBenchmark:
                                  objective=optimize_ranolazine,
                                  contribution_specification=specification,
                                  starting_population=[ranolazine])
+
+
+def smina_dock(protein: str, protein_dir: str) -> GoalDirectedBenchmark:
+    """
+    TODO: docs
+    TODO: przemyslec api
+    """
+    specification = uniform_specification(1, 3)  # TODO: dopasowac
+
+    return GoalDirectedBenchmark(name='Smina docking',
+                                 objective=SminaDockerScoringFunction(protein, protein_dir),
+                                 contribution_specification=specification)

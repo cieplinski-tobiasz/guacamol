@@ -36,6 +36,13 @@ class GoalDirectedBenchmarkResult:
         self.number_scoring_function_calls = number_scoring_function_calls
         self.metadata = metadata
 
+    def __str__(self):
+        return f'Name: {self.benchmark_name}\n' +\
+               f'Score: {self.score}\n' +\
+               f'OptMols: {self.optimized_molecules}\n' +\
+               f'ExTime: {self.execution_time}\n' +\
+               f'Meta: {self.metadata}'
+
 
 class GoalDirectedBenchmark:
     """
