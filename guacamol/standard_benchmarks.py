@@ -469,12 +469,16 @@ def ranolazine_mpo() -> GoalDirectedBenchmark:
                                  starting_population=[ranolazine])
 
 
-def smina_dock(protein: str, protein_dir: str) -> GoalDirectedBenchmark:
+def smina_dock(protein: str, protein_dir: str, n_samples: int = 100) -> GoalDirectedBenchmark:
     """
-    TODO: docs
-    TODO: przemyslec api
+    Benchmark to assess molecules that dock well to the given protein.
+
+    Args:
+        protein: Target of the docking
+        protein_dir: Path to directory with proteins in pdb/pdbqt format
+        n_samples: Amount of molecules to dock
     """
-    specification = uniform_specification(1, 3)  # TODO: dopasowac
+    specification = uniform_specification(*range(1, n_samples + 1))
 
     return GoalDirectedBenchmark(name='Smina docking',
                                  objective=SminaDockerScoringFunction(protein, protein_dir),
