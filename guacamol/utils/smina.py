@@ -5,7 +5,6 @@ Note: recommended way to use is to pass mol2 ligands, not pdbqt. Parsing files t
 Note: it is recommended to use a larger docking pocket. Otherwise many ligands fail to dock.
 """
 
-# TODO: use guacamol-specific exceptions
 # TODO: write test cases
 import logging
 import os
@@ -14,6 +13,9 @@ import tempfile
 
 from rdkit import Chem
 from rdkit.Chem import AllChem
+
+import guacamol.utils.chemistry as chem_utils
+from guacamol.scoring_function import InvalidMolecule
 
 logger = logging.getLogger(__name__)
 
@@ -62,13 +64,10 @@ def _embed_rdkit_molecule(molecule, seed: int, silent: bool = True):
         conf_id = AllChem.EmbedMolecule(molecule, useRandomCoords=False, ignoreSmoothingFailures=True, randomSeed=seed)
 
     if conf_id == -1:
-        logger.warning('Embedding failure')
-
         if silent:
             return None
         else:
-            # TODO: SCBC Excpetion
-            raise RuntimeError(f'Embedding failure')
+            raise InvalidMolecule(f'Embedding failure')
 
     return molecule
 
@@ -101,13 +100,10 @@ def _optimize_rdkit_molecule(molecule, silent: bool = False):
             break
 
     if ret != 0:
-        logger.warning('Structure optimization failure')
-
         if silent:
             return None
         else:
-            # TODO: SCBC Excpetion
-            raise RuntimeError('Structure optimization failure')
+            raise InvalidMolecule('Structure optimization failure')
 
     return molecule
 
@@ -130,42 +126,36 @@ def _to_mol2_file(smiles: str, output_filename: str, seed: int = 0, silent: bool
     Raises:
         RuntimeError: If conversion fails and silent is False.
     """
-    molecule = Chem.MolFromSmiles(smiles)
+    molecule = chem_utils.smiles_to_rdkit_mol(smiles)
 
     if molecule is None:
-        # TODO: InvalidMolecule
-        raise RuntimeError(f'RDKit conversion failure for {smiles}')
+        raise InvalidMolecule(f'Failed to convert {smiles} to RDKit mol')
 
     molecule = _embed_rdkit_molecule(molecule, seed)
     _optimize_rdkit_molecule(molecule)
     Chem.MolToMolFile(molecule, output_filename)
 
-    # TODO: either change to subprocess.run
-    #       or mute stdout/stderr somehow
-    openbabel_return_code = os.system(f'obabel -imol {output_filename} -omol2 -O {output_filename}')
+    command = f'obabel -imol {output_filename} -omol2 -O {output_filename}'
+    openbabel_return_code = subprocess.run(command, shell=True, stdout=subprocess.DEVNULL,
+                                           stderr=subprocess.DEVNULL).returncode
 
     if openbabel_return_code != 0:
-        logger.warning(f'Mol2 conversion for {smiles} failed')
-
         if silent:
             return None
         else:
-            # TODO: InvalidMolecule?
-            raise RuntimeError(f'Openbabel conversion failure for {smiles}')
+            raise InvalidMolecule(f'Failed to convert {smiles} to .mol2')
 
     return output_filename
 
 
-def _exec_command(command: str, timeout: int = None):
+def _exec_docking(command: str, timeout: int = None):
     try:
         result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, timeout=timeout)
         out, err, return_code = str(result.stdout, 'utf-8').split('\n'), str(result.stderr, 'utf-8').split(
             '\n'), result.returncode
         return out, err, return_code
-    except subprocess.TimeoutExpired: # TODO: raise ScoreCannotBeCalculated
-        return [], [], 'timeout'
-    except Exception as e:
-        raise e
+    except subprocess.TimeoutExpired:
+        raise InvalidMolecule('Docking timeout')
 
 
 def _parse_smina_result(docked_ligand_fname, smina_stdout):
@@ -220,12 +210,11 @@ def smina_dock_ligand(smiles, receptor, pocket_center=None, pocket_range=25, exh
         ]
 
         cmd = ' '.join([str(entry) for entry in cmd])
-        stdout, stderr, return_code = _exec_command(cmd, timeout=timeout)
+        stdout, stderr, return_code = _exec_docking(cmd, timeout=timeout)
 
         if return_code != 0:
             logger.error(stderr)
-            # TODO: ScoreCannotBeCalculated
-            raise RuntimeError(f'Failed to dock {os.path.basename(smiles)} to {os.path.basename(receptor)}')
+            raise InvalidMolecule(f'Failed to dock {smiles} to {os.path.basename(receptor)}')
 
         scores = _parse_smina_result(output.name, stdout)
 
