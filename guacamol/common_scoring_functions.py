@@ -182,9 +182,17 @@ class SMARTSScoringFunction(ScoringFunctionBasedOnRdkitMol):
 
 
 class SminaDockerScoringFunction(MoleculewiseScoringFunction):
+    """
+    Scoring function returning the docking score calculated by smina docker.
+    """
 
-    def __init__(self, protein: str, protein_dir: str, score_modifier: ScoreModifier = None):
-        super().__init__(score_modifier)
+    def __init__(self, protein: str, protein_dir: str):
+        """
+        Args:
+            protein: Target of the docking
+            protein_dir: Path to directory with proteins in pdb/pdbqt format
+        """
+        super().__init__()
         protein = protein.lower()
         assert protein in smina.proteins
 
