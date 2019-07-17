@@ -482,4 +482,5 @@ def smina_dock(protein: str, protein_dir: str, n_samples: int = 100) -> GoalDire
 
     return GoalDirectedBenchmark(name='Smina docking',
                                  objective=SminaDockerScoringFunction(protein, protein_dir),
-                                 contribution_specification=specification)
+                                 contribution_specification=specification,
+                                 sort_scores_decreasing=False)
