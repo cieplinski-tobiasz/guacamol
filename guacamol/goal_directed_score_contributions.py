@@ -37,18 +37,19 @@ def uniform_specification(*top_counts: int) -> ScoreContributionSpecification:
 
 
 def compute_global_score(contribution_specification: ScoreContributionSpecification,
-                         scores: List[float]) -> Tuple[float, Dict[str, float]]:
+                         scores: List[float], sort_scores_decreasing: bool = True) -> Tuple[float, Dict[str, float]]:
     """
     Computes the global score according to the contribution specification.
 
     Args:
         contribution_specification: Score contribution specification
         scores: List of all scores - list must be long enough for all top_counts in contribution_specification
+        sort_scores_decreasing: Specifies the ordering of the results, i.e. whether higher is better
 
     Returns:
         Tuple with the global score and a dict with the considered top-x scores
     """
-    sorted_scores = sorted(scores, reverse=True)
+    sorted_scores = sorted(scores, reverse=sort_scores_decreasing)
 
     global_score = 0.0
     top_x_dict = {}

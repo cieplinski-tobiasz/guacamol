@@ -94,7 +94,8 @@ class GoalDirectedBenchmark:
                            f'Padding scores with {number_missing} zeros...')
             scores.extend([0.0] * number_missing)
 
-        global_score, top_x_dict = compute_global_score(self.contribution_specification, scores)
+        global_score, top_x_dict = compute_global_score(
+            self.contribution_specification, scores, self.sort_scores_decreasing)
 
         scored_molecules = zip(unique_molecules, scores)
         sorted_scored_molecules = sorted(scored_molecules, key=lambda x: (x[1], x[0]),
