@@ -51,18 +51,21 @@ class GoalDirectedBenchmark:
 
     def __init__(self, name: str, objective: ScoringFunction,
                  contribution_specification: ScoreContributionSpecification,
-                 starting_population: Optional[List[str]] = None) -> None:
+                 starting_population: Optional[List[str]] = None,
+                 sort_scores_decreasing: bool = True) -> None:
         """
         Args:
             name: Benchmark name
             objective: Objective for the goal-directed optimization
             contribution_specification: Specifies how to calculate the global benchmark score
+            sort_scores_decreasing: Specifies the ordering of the results, i.e. whether higher is better
         """
         self.name = name
         self.objective = objective
         self.wrapped_objective = ScoringFunctionWrapper(scoring_function=objective)
         self.contribution_specification = contribution_specification
         self.starting_population = starting_population
+        self.sort_scores_decreasing = sort_scores_decreasing
 
     def assess_model(self, model: GoalDirectedGenerator) -> GoalDirectedBenchmarkResult:
         """
@@ -94,7 +97,8 @@ class GoalDirectedBenchmark:
         global_score, top_x_dict = compute_global_score(self.contribution_specification, scores)
 
         scored_molecules = zip(unique_molecules, scores)
-        sorted_scored_molecules = sorted(scored_molecules, key=lambda x: (x[1], x[0]), reverse=True)
+        sorted_scored_molecules = sorted(scored_molecules, key=lambda x: (x[1], x[0]),
+                                         reverse=self.sort_scores_decreasing)
 
         internal_similarities = calculate_internal_pairwise_similarities(unique_molecules)
 
