@@ -6,7 +6,7 @@ from rdkit.DataStructs.cDataStructs import TanimotoSimilarity
 
 from guacamol.score_modifier import ScoreModifier, MinGaussianModifier, MaxGaussianModifier, GaussianModifier
 from guacamol.scoring_function import ScoringFunctionBasedOnRdkitMol, MoleculewiseScoringFunction
-from guacamol.utils import smina
+from guacamol.utils import smina, proteins
 from guacamol.utils.chemistry import smiles_to_rdkit_mol, parse_molecular_formula
 from guacamol.utils.descriptors import mol_weight, logP, num_H_donors, tpsa, num_atoms, AtomCounter
 from guacamol.utils.fingerprints import get_fingerprint
@@ -186,19 +186,24 @@ class SminaDockerScoringFunction(MoleculewiseScoringFunction):
     Scoring function returning the docking score calculated by smina docker.
     """
 
-    def __init__(self, protein: str, protein_dir: str):
+    def __init__(self, protein: str):
         """
         Args:
             protein: Target of the docking
-            protein_dir: Path to directory with proteins in pdb/pdbqt format
         """
         super().__init__()
         protein = protein.lower()
-        assert protein in smina.proteins
+        available_proteins = proteins.get_proteins()
 
-        self._protein = smina.proteins[protein]
-        self._protein_dir = protein_dir
+        assert protein in available_proteins  # TODO: change it to error
+
+        self._protein = available_proteins[protein]
+
+        print(self._protein.path)
+        print(self._protein.pocket_center)
+
 
     def raw_score(self, smiles: str) -> float:
-        protein_path = os.path.join(self._protein_dir, self._protein['filename'])
-        return smina.smina_dock_ligand(smiles, protein_path, self._protein['pocket_center'])
+        print(self._protein.path)
+        print(self._protein.pocket_center)
+        return smina.smina_dock_ligand(smiles, self._protein.path, self._protein.pocket_center)
